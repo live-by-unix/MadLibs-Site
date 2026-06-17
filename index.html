@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MadLibs Machine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --fg: #f5f5f7;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --border: #26273a;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --radius: 10px;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 960px;
+      background: linear-gradient(145deg, #020617, #020617 40%, #020617 60%, #020617);
+      border-radius: 18px;
+      border: 1px solid #111827;
+      box-shadow: var(--shadow);
+      padding: 22px 22px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glow {
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.25), transparent 55%),
+        radial-gradient(circle at 100% 0%, rgba(236, 72, 153, 0.18), transparent 55%),
+        radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.18), transparent 55%);
+      opacity: 0.35;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .app-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 0;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    button,
+    select {
+      font-family: inherit;
+      font-size: 0.85rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--fg);
+      padding: 7px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+    }
+
+    select {
+      padding-right: 28px;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%),
+        linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+      background-position: calc(100% - 12px) 9px, calc(100% - 7px) 9px;
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      border-color: rgba(129, 140, 248, 0.8);
+      color: white;
+      font-weight: 500;
+    }
+
+    button.secondary {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:hover,
+    select:hover {
+      border-color: rgba(148, 163, 184, 0.9);
+      background: rgba(15, 23, 42, 0.98);
+    }
+
+    button.primary:hover {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 780px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .controls {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), #020617);
+      border-radius: var(--radius);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      padding: 14px 14px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(148, 163, 184, 0.12), transparent 55%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .panel-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #9ca3af;
+    }
+
+    .panel-tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .story-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      align-items: center;
+    }
+
+    .story-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.8rem;
+    }
+
+    label {
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    label span.kind {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.7rem;
+      color: #a5b4fc;
+    }
+
+    input[type="text"] {
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--fg);
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    input[type="text"]:focus {
+      border-color: rgba(129, 140, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .output {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+      min-height: 120px;
+    }
+
+    .output.empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .output span.blank {
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.8);
+      padding: 0 2px;
+      color: #a5b4fc;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 0.75rem;
+    }
+
+    .chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: #e5e7eb;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .footer {
+      margin-top: 10px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .footer span strong {
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #f97316;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="glow"></div>
+    <div class="app-inner">
+      <header>
+        <div class="title-block">
+          <h1>
+            MadLibs Machine
+            <span class="badge">Hash‑Enabled</span>
+          </h1>
+          <p class="subtitle">
+            Pick a story, fill the blanks, share the URL — it opens the same story.
+          </p>
+        </div>
+        <div class="controls">
+          <select id="storySelect" title="Choose a story"></select>
+          <button id="randomStoryBtn" class="secondary" type="button">
+            🎲 Random story
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="panel">
+          <div class="panel-inner">
+            <div class="panel-header">
+              <div class="panel-title">Inputs</div>
+              <div class="panel-tag">Step 1 · Fill the blanks</div>
+            </div>
+            <div class="story-meta">
+              <span><span class="dot"></span><span id="storyName">Story</span></span>
+              <span>Blanks: <strong id="blankCount">0</strong></span>
+              <span>Difficulty: <strong id="difficultyLabel">Easy</strong></span>
+            </div>
+            <p class="hint">
+              Tip: The more unhinged your words, the better the story.
+            </p>
+            <div id="fields" class="fields"></div>
+            <div id="error" class="error" style="display:none;"></div>
+            <div class="actions">
+              <button id="clearBtn" class="secondary" type="button">Reset</button>
+              <button id="generateBtn" class="primary" type="button">Generate story</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-inner">
+            <div class="panel-header">
+              <div class="panel-title">Output</div>
+              <div class="panel-tag">Step 2 · Read &amp; laugh</div>
+            </div>
+            <div class="chips" id="chips"></div>
+            <div id="output" class="output empty">
+              Your story will appear here once you hit “Generate story”.
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div class="footer">
+        <span>
+          <strong>Mode:</strong> Classic MadLibs · Hash‑linked stories · All client‑side
+        </span>
+        <span class="pill">
+          <span class="pill-dot"></span>
+          <span id="statusText">Ready</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const stories = [
+      {
+        id: "space_mission",
+        name: "Disaster in Space",
+        difficulty: "Medium",
+        tags: ["Space", "Chaos", "Adventure"],
+        template:
+          "Today, astronaut {name} launched into space aboard the {adjective} spaceship {shipName}. " +
+          "Their mission: to {verb} the mysterious {adjective2} moon of {planet}. " +
+          "Everything was going smoothly until a giant {noun} appeared outside the window, " +
+          "waving a {object} and yelling, “{exclamation}!” " +
+          "Mission Control in {city} had only one thing to say: “{quote}”.",
+        blanks: [
+          { key: "name", label: "Name", kind: "proper noun" },
+          { key: "adjective", label: "Adjective", kind: "adjective" },
+          { key: "shipName", label: "Spaceship name", kind: "proper noun" },
+          { key: "verb", label: "Verb", kind: "verb" },
+          { key: "adjective2", label: "Another adjective", kind: "adjective" },
+          { key: "planet", label: "Planet name", kind: "proper noun" },
+          { key: "noun", label: "Random noun", kind: "noun" },
+          { key: "object", label: "Object", kind: "noun" },
+          { key: "exclamation", label: "Exclamation", kind: "exclamation" },
+          { key: "city", label: "City", kind: "proper noun" },
+          { key: "quote", label: "Ridiculous quote", kind: "phrase" }
+        ]
+      },
+      {
+        id: "school_day",
+        name: "The Worst School Day",
+        difficulty: "Easy",
+        tags: ["School", "Comedy"],
+        template:
+          "This morning, I woke up feeling {adjective} about school. " +
+          "First, I missed the {vehicle} and had to {verb} all the way there. " +
+          "When I finally arrived, my teacher, Mr./Ms. {teacher}, announced a surprise test on {subject}. " +
+          "Instead of studying, I had spent all night {activity}. " +
+          "At lunch, my {food} exploded all over the {place}. " +
+          "By the end of the day, everyone was calling me “{nickname}”.",
+        blanks: [
+          { key: "adjective", label: "Adjective", kind: "adjective" },
+          { key: "vehicle", label: "Type of vehicle", kind: "noun" },
+          { key: "verb", label: "Verb", kind: "verb" },
+          { key: "teacher", label: "Teacher's last name", kind: "proper noun" },
+          { key: "subject", label: "School subject", kind: "noun" },
+          { key: "activity", label: "Embarrassing activity", kind: "verb ending in -ing" },
+          { key: "food", label: "Food", kind: "noun" },
+          { key: "place", label: "Place in school", kind: "noun" },
+          { key: "nickname", label: "Embarrassing nickname", kind: "noun" }
+        ]
+      },
+      {
+        id: "fantasy_quest",
+        name: "The Ridiculous Quest",
+        difficulty: "Hard",
+        tags: ["Fantasy", "Quest", "Chaos"],
+        template:
+          "In the ancient kingdom of {kingdom}, a brave hero named {hero} set out on a quest to find the legendary {object}. " +
+          "Armed only with a {weapon} and a slightly confused {creature}, they journeyed through the {adjective} Forest of {forest}. " +
+          "Along the way, they had to {verb} across a river of {liquid} and solve a riddle from a talking {animal}. " +
+          "At the end of the quest, they discovered the {object} was actually just a {sillyThing}, and everyone in {kingdom} agreed to never speak of it again.",
+        blanks: [
+          { key: "kingdom", label: "Kingdom name", kind: "proper noun" },
+          { key: "hero", label: "Hero's name", kind: "proper noun" },
+          { key: "object", label: "Legendary object", kind: "noun" },
+          { key: "weapon", label: "Weapon", kind: "noun" },
+          { key: "creature", label: "Magical creature", kind: "noun" },
+          { key: "adjective", label: "Adjective", kind: "adjective" },
+          { key: "forest", label: "Forest name", kind: "proper noun" },
+          { key: "verb", label: "Verb", kind: "verb" },
+          { key: "liquid", label: "Type of liquid", kind: "noun" },
+          { key: "animal", label: "Animal", kind: "noun" },
+          { key: "sillyThing", label: "Silly object", kind: "noun" }
+        ]
+      }
+    ];
+
+    const storySelect = document.getElementById("storySelect");
+    const fieldsContainer = document.getElementById("fields");
+    const outputEl = document.getElementById("output");
+    const storyNameEl = document.getElementById("storyName");
+    const blankCountEl = document.getElementById("blankCount");
+    const difficultyLabelEl = document.getElementById("difficultyLabel");
+    const chipsEl = document.getElementById("chips");
+    const statusTextEl = document.getElementById("statusText");
+    const errorEl = document.getElementById("error");
+
+    const generateBtn = document.getElementById("generateBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const randomStoryBtn = document.getElementById("randomStoryBtn");
+
+    let currentStory = stories[0];
+
+    function setStatus(text) {
+      statusTextEl.textContent = text;
+    }
+
+    function renderChips(story) {
+      chipsEl.innerHTML = "";
+      story.tags.forEach((tag) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = tag;
+        chipsEl.appendChild(chip);
+      });
+    }
+
+    function difficultyColor(label) {
+      switch (label.toLowerCase()) {
+        case "easy":
+          return "#22c55e";
+        case "medium":
+          return "#eab308";
+        case "hard":
+          return "#f97316";
+        default:
+          return "#a5b4fc";
+      }
+    }
+
+    function renderStory(story) {
+      currentStory = story;
+      storyNameEl.textContent = story.name;
+      blankCountEl.textContent = story.blanks.length;
+      difficultyLabelEl.textContent = story.difficulty;
+      difficultyLabelEl.style.color = difficultyColor(story.difficulty);
+      renderChips(story);
+
+      fieldsContainer.innerHTML = "";
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+
+      story.blanks.forEach((blank, index) => {
+        const field = document.createElement("div");
+        field.className = "field";
+
+        const label = document.createElement("label");
+
+        const labelText = document.createElement("span");
+        labelText.textContent = `${index + 1}. ${blank.label}`;
+
+        const kind = document.createElement("span");
+        kind.className = "kind";
+        kind.textContent = blank.kind;
+
+        label.appendChild(labelText);
+        label.appendChild(kind);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.dataset.key = blank.key;
+        input.placeholder = `Enter a ${blank.kind}…`;
+
+        field.appendChild(label);
+        field.appendChild(input);
+        fieldsContainer.appendChild(field);
+      });
+
+      outputEl.textContent =
+        "Your story will appear here once you hit “Generate story”.";
+      outputEl.classList.add("empty");
+      setStatus("Ready");
+    }
+
+    function getInputs() {
+      const inputs = fieldsContainer.querySelectorAll("input[data-key]");
+      const values = {};
+      let missing = [];
+      inputs.forEach((input) => {
+        const key = input.dataset.key;
+        const value = input.value.trim();
+        values[key] = value;
+        if (!value) {
+          missing.push(key);
+        }
+      });
+      return { values, missing };
+    }
+
+    function generateStory() {
+      const { values, missing } = getInputs();
+      if (missing.length > 0) {
+        errorEl.style.display = "block";
+        errorEl.textContent = "Fill in all the blanks before generating the story.";
+        setStatus("Missing blanks");
+        return;
+      }
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+
+      let text = currentStory.template;
+      Object.keys(values).forEach((key) => {
+        const value = values[key];
+        const regex = new RegExp("\\{" + key + "\\}", "g");
+        text = text.replace(regex, value);
+      });
+
+      outputEl.textContent = text;
+      outputEl.classList.remove("empty");
+      setStatus("Story generated");
+    }
+
+    function clearInputs() {
+      const inputs = fieldsContainer.querySelectorAll("input[data-key]");
+      inputs.forEach((input) => (input.value = ""));
+      outputEl.textContent =
+        "Your story will appear here once you hit “Generate story”.";
+      outputEl.classList.add("empty");
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+      setStatus("Inputs cleared");
+    }
+
+    function updateHash(storyId) {
+      if (location.hash === "#" + storyId) return;
+      history.replaceState(null, "", "#" + storyId);
+    }
+
+    function loadStoryFromHash() {
+      const hash = location.hash.replace("#", "");
+      const story = stories.find((s) => s.id === hash);
+      if (story) {
+        storySelect.value = story.id;
+        renderStory(story);
+        setStatus("Loaded from URL");
+      } else {
+        storySelect.value = currentStory.id;
+        renderStory(currentStory);
+        updateHash(currentStory.id);
+      }
+    }
+
+    function initStorySelect() {
+      stories.forEach((story, index) => {
+        const option = document.createElement("option");
+        option.value = story.id;
+        option.textContent = `${index + 1}. ${story.name}`;
+        storySelect.appendChild(option);
+      });
+    }
+
+    storySelect.addEventListener("change", () => {
+      const story = stories.find((s) => s.id === storySelect.value);
+      if (story) {
+        renderStory(story);
+        updateHash(story.id);
+        setStatus("Story changed");
+      }
+    });
+
+    randomStoryBtn.addEventListener("click", () => {
+      const index = Math.floor(Math.random() * stories.length);
+      const story = stories[index];
+      storySelect.value = story.id;
+      renderStory(story);
+      updateHash(story.id);
+      setStatus("Random story selected");
+    });
+
+    generateBtn.addEventListener("click", generateStory);
+    clearBtn.addEventListener("click", clearInputs);
+
+    window.addEventListener("hashchange", loadStoryFromHash);
+
+    initStorySelect();
+    if (location.hash) {
+      loadStoryFromHash();
+    } else {
+      renderStory(currentStory);
+      updateHash(currentStory.id);
+    }
+  </script>
+</body>
+</html>
